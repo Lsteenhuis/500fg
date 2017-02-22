@@ -11,7 +11,12 @@ dds <- DESeqDataSetFromMatrix(countData = extremesCountData,
                               design = ~ condition)
 
 dds <- DESeq(dds)
-res <- results(dds)
 res05 <- results(dds, alpha=0.05)
 summary(res05)
-qresOrdered <- res[order(res$padj),]
+qresOrdered <- res05[order(res05$padj),]
+
+
+library("IHW")
+resIHW <- results(dds, filterFun = ihw)
+summary(resIHW)
+IWHresOrdered <- resIHW[order(resIHW$padj),]
