@@ -68,4 +68,5 @@ testDeSeq <- function(IT){
 }
 
 lapply(colnames(immuneTrait.subset), testDeSeq)
-
+# for file in ./*csv; do if [[ ! $(wc -l <$file) -ge 2 ]]; then mv $file $file.nohits; fi ; done
+# Check if the file contains >1 lines, if not append .nohits behind the file
