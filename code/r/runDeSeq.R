@@ -59,6 +59,7 @@ testDeSeq <- function(IT){
   dds <- DESeqDataSetFromMatrix(countData = ItMatrix,
                                 colData = expression_annotation,
                                 design = ~ condition)
+  
   dds <- DESeq(dds)
   res <- results(dds, alpha=0.05)
   resOrdered <- res[order(res$log2FoldChange),]
