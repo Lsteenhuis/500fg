@@ -9,57 +9,43 @@ library("ggplot2")
 setwd("/Volumes/MacOS/500fg/")
 drugTable <- read.csv("data/drugs.ens.csv",stringsAsFactors = F)
 deResult <- list.files("deseq_results",pattern = ".csv$",full.names = T)
+
+# get the IT number in order, used for ordering of rows.
 itNames<-lapply(deResult,function(x){
   x <- gsub(pattern="[^0-9]+", x, replacement = "")
 })
-regexpr("([A-Z]\\w+)",deResult,perl=T)
+itNames <- unlist(itNames)
 
-# DEseq results over Drug table
-###############################################################################
-# test <- function(deFile){
-#   print(deFile)
-#   deGenes <- read.csv(deFile,stringsAsFactors = F )
-#   deGenes.names <- rownames(deGenes)
-#   percOverlap <- apply(drugTable[,3:ncol(drugTable)], 2 , calculatePercentage, deGenes.names=deGenes.names)
-#   return(as.numeric(percOverlap))
-# }
-# 
-# calculatePercentage <- function(drugs,deGenes.names){
-#   drug.sorted <- order(drugs)
-#   len <- ceiling(length(drugs) * perc )
-#   drugGenes <- drugTable[,2][drug.sorted[0:len]]
-#   drugGenes <- c(drugGenes,drugTable[,2][rev(drug.sorted)[0:len]])
-#   percentage <- (length(intersect(deGenes.names,drugGenes)) / length(deGenes.names) * 100 )
-#   return(as.numeric(percentage))
-# }
-# 
-# perc <- 0.10
-# geneOverlap <- lapply(deResult[89], test)
-# head(sort(unlist(moi),decreasing = T ) ,20)
-# 
-# for( i in seq_along(geneOverlap)){
-#   barplot(sort(unlist(geneOverlap[i])),main=i,xpd = T)
-# }
-#############################################################################
+# Percentage that is used to get genes from the extremes
+perc <- 0.25
 
-
-testDrug <- function(drugCol){
+# takes a column from the drug table
+# calculates the subset length based on the percentage and retrieves that amount from high and low responders.
+# loops over DESeq results file for every column to call itterateGen to calculate the overlap percentages.
+# returns this percentagte.
+itterateDrug <- function(drugCol){
   drug.sorted <- order(drugCol)
-  len <- ceiling(length(drugCol) * perc )
-  drugGenes <- drugTable[,2][drug.sorted[0:len]]
-  drugGenes <- c(drugGenes,drugTable[,2][rev(drug.sorted)[0:len]])
-  colPerc <-lapply(deResult,testGen,drugGenes=drugGenes)
+  subsetLength <- ceiling(length(drugCol) * perc )
+  drugGenes <- drugTable[,2][drug.sorted[0:subsetLength]]
+  drugGenes <- c(drugGenes,drugTable[,2][rev(drug.sorted)[0:subsetLength]])
+  colPerc <-lapply(deResult,itterateGen,drugGenes=drugGenes)
   return(as.numeric(colPerc))  
 }
 
-testGen <- function(deFile,drugGenes){
+# reads DESeq result fie.
+# calculates the percentage overlap by taking the length of intersection between the DESeq genes and drug table subset genes.
+itterateGen <- function(deFile,drugGenes){
   deGenes <- read.csv(deFile,stringsAsFactors = F )
   deGenes.names <- rownames(deGenes)
-  percentage <- (length(intersect(deGenes.names,drugGenes)) / length(deGenes.names) * 100 ) 
+  percentage <- (length(intersect(deGenes.names,drugGenes)) / length(drugGenes) * 100 ) 
   return(as.numeric(percentage))
 }
-testPerc <- apply(drugTable[,3:4],2 ,testDrug)
+testPerc <- apply(drugTable,2 ,itterateDrug)
 
+
+itName.ordered <- itNames[order(as.numeric(itNames))]
+
+# reads the gene counts from the DESeq results files
 geneCounts <- lapply(itName.ordered,function(results){
   file <- paste("deseq_results/deseq.IT",results,".results.csv",sep="")
   deGenes <- read.csv(file,stringsAsFactors = F )
@@ -67,23 +53,23 @@ geneCounts <- lapply(itName.ordered,function(results){
   return(length(deGenes.names))
 })
 
+#adds column containing gene counts
 testPerc <- cbind(geneCount=unlist(geneCounts), testPerc)
-
-rownames(testPerc) <- itNames
-itName.ordered <- order(as.numeric(row.names(testPerc)))
-testPerc <- testPerc[ order(as.numeric(row.names(testPerc))), ]
-testPerc <- cbind(ImmunoTrait = paste("IT",rownames(testPerc),sep=""), testPerc)
+# adds column containing IT id's
+testPerc <- cbind(ImmunoTrait = paste("IT",itName.ordered,sep=""), testPerc)
 testPerc <- as.dataframe(testPerc)
 
 
-write.csv(testPerc,row.names = F,file = "matrices/drug.de.overlap.csv", quote = F)
+write.csv(testPerc,row.names = F,file = "matrices/drug.de.overlap.25.csv", quote = F)
 
 
-count <- 1
-apply(testPerc[,1:2],2, function(x){
-  #row.names(testPerc[which(testPerc == x)])
-  barplot(sort(x),main=paste("IT", count,sep=""))
-  count <<- count + 1
+apply(testPerc,1, function(x){
+  barplot(sort(as.numeric(x[3:1309])),main=paste(x[1],x[2],"genes",sep=" "))
+})
+
+apply(testPerc[,3:20],2, function(x){
+  barplot(sort(as.numeric(x)))
+  return(NULL)
 })
 
 
