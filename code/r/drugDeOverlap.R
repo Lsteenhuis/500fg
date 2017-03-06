@@ -16,14 +16,13 @@ itNames<-lapply(deResult,function(x){
 })
 itNames <- unlist(itNames)
 
-# Percentage that is used to get genes from the extremes
-perc <- 0.25
+
 
 # takes a column from the drug table
 # calculates the subset length based on the percentage and retrieves that amount from high and low responders.
 # loops over DESeq results file for every column to call itterateGen to calculate the overlap percentages.
 # returns this percentagte.
-itterateDrug <- function(drugCol){
+itterateDrug <- function(drugCol,perc){
   drug.sorted <- order(drugCol)
   subsetLength <- ceiling(length(drugCol) * perc )
   drugGenes <- drugTable[,2][drug.sorted[0:subsetLength]]
@@ -37,30 +36,33 @@ itterateDrug <- function(drugCol){
 itterateGen <- function(deFile,drugGenes){
   deGenes <- read.csv(deFile,stringsAsFactors = F )
   deGenes.names <- rownames(deGenes)
-  percentage <- (length(intersect(deGenes.names,drugGenes)) / length(drugGenes) * 100 ) 
+  percentage <- (length(intersect(deGenes.names,drugGenes)) / 1309 * 100 ) 
   return(as.numeric(percentage))
 }
-testPerc <- apply(drugTable,2 ,itterateDrug)
 
 
-itName.ordered <- itNames[order(as.numeric(itNames))]
+runScript <- function(perc){
+  testPerc <- apply(drugTable,2 ,itterateDrug, perc = perc)
+  itName.ordered <- itNames[order(as.numeric(itNames))]
+  
+  # reads the gene counts from the DESeq results files
+  geneCounts <- lapply(itName.ordered,function(results){
+    file <- paste("deseq_results/deseq.IT",results,".results.csv",sep="")
+    deGenes <- read.csv(file,stringsAsFactors = F )
+    deGenes.names <- rownames(deGenes)
+    return(length(deGenes.names))
+  })
+  
+  #adds column containing gene counts
+  testPerc <- cbind(geneCount=unlist(geneCounts), testPerc)
+  # adds column containing IT id's
+  testPerc <- cbind(ImmunoTrait = paste("IT",itName.ordered,sep=""), testPerc)
+  write.csv(testPerc,row.names = F,file = "matrices/Whole.drug.de.overlap.",perc,".csv", quote = F)
+}
+# Percentage that is used to get genes from the extremes
+measures <- c(0.1,0.15,0.2,0.25)
+lapply(measures,runScript)
 
-# reads the gene counts from the DESeq results files
-geneCounts <- lapply(itName.ordered,function(results){
-  file <- paste("deseq_results/deseq.IT",results,".results.csv",sep="")
-  deGenes <- read.csv(file,stringsAsFactors = F )
-  deGenes.names <- rownames(deGenes)
-  return(length(deGenes.names))
-})
-
-#adds column containing gene counts
-testPerc <- cbind(geneCount=unlist(geneCounts), testPerc)
-# adds column containing IT id's
-testPerc <- cbind(ImmunoTrait = paste("IT",itName.ordered,sep=""), testPerc)
-testPerc <- as.dataframe(testPerc)
-
-
-write.csv(testPerc,row.names = F,file = "matrices/drug.de.overlap.25.csv", quote = F)
 
 
 apply(testPerc,1, function(x){
