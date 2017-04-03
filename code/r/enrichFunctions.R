@@ -1,78 +1,146 @@
-#!/usr/bin/env Rscript
-# Date: 28-03-2017
-# Author: Lars Steenhuis
-# Script which uses gCMAP to test for differential expression between high and low responding genes
-# Calculates the probabilty of the DE genes being part of the high / low responding genes in drugTable
-# Calculates the actual enrichment score between DE genes and high / low responding genes in drugTable
+getItExprMatrix <- function(IT){
+  percentage= ceiling(nrow(immuneTrait.subset) / 100 * 15)
+  itValues <- immuneTrait.subset[,IT]
+  immuneTrait.subset.order <- order(itValues,decreasing = T)
+  
+  lowValues <- rnaSeqSamples[rev(immuneTrait.subset.order)[1:percentage]]
+  highValues <- rnaSeqSamples[immuneTrait.subset.order[1:percentage]]
+  
+  extremeValues <- c(lowValues,highValues)
+  ItMatrix <- as.data.frame(geneLevelExpression[,extremeValues])
+  varMeta <- matrix(c(rep("Control",15),rep("Case",15)),
+                    byrow = T,
+                    nrow = nrow(ItMatrix), 
+                    ncol= ncol(ItMatrix))
+  colnames(varMeta) <- c(paste("control",1:15,sep="_"),paste("case",1:15,sep="_"))
+  varMeta <- as.data.frame(varMeta)
+  
+  annotatedIt <- AnnotatedDataFrame(as.data.frame(t(ItMatrix)), varMeta, dimLabels=c("gene id's","samples"))
+  
+  countSet <- newCountDataSet(ItMatrix, 
+                             conditions = c(rep("low",15),rep("high",15)),
+                             phenoData = annotatedIt
+  )
+  countSet
+}
 
-library("gCMAP")
-library("pheatmap")
-library("DESeq")
-library(grid)
-setwd("/Volumes/MacOS/500fg")
-source("code/r/enrichFunctions.R")
-load("data/gcMAP/nchannelSet")
 
-######## loading and reading data
-drugTable <- read.csv("data/drugs.ens.csv", stringsAsFactors = F)
-geneLevelExpression <- read.delim("data/1508_Li_RNAseq.expression.genelevel.v75.htseq.txt", row.names = 1)
-immuneTraits <- read.csv("data/IRT_immuneTraits_500FG.csv", row.names=1)
+generateDrugGeneSetCollection <- function(drugColIndex){
+  subsetLength <- nrow(drugTable) * 0.05
+  drugCol <- drugTable[,drugColIndex]
+  drugName <- colnames(drugTable)[drugColIndex]
+  drug.sorted <- order(drugCol)
+  
+  drugGenesHi <- drugTable[,2][drug.sorted[0:subsetLength]]
+  drugGenesLo <- drugTable[,2][rev(drug.sorted)[0:subsetLength]]
+  
+  drugGeneSetHi <- GeneSet(unique(drugGenesHi),setIdentifier = paste(drugName,"Hi",sep="_"),
+                           setName =paste(drugName,"High",sep=""))
+  drugGeneSetLo <- GeneSet(unique(drugGenesLo),setIdentifier = paste(drugName,"Lo",sep="_"),
+                           setName =paste(drugName,"Low",sep=""))
+  
+  return(c(drugGeneSetLo,drugGeneSetHi))
+}
 
-kegg_ensembl <- read.delim(file="/Users/umcg-lsteenhuis/Downloads/mart_export.txt",stringsAsFactors = F)
-universe <- unlist(kegg_ensembl[,1])
+useGcmapFunction <- function(geneDirection, mode){
+  # checks if cde (nchannelSet) has been loaded, loads if it isn't
+  if (!exists("cde")) {
+    load("data/gcMAP/nchannelSet")
+  }
+  perc = ceiling(nrow(cde) * 0.05)
+  
+  # For each geneDirection each both directions (low and high expressed)
+  sapply(1:2,function(setIndex){
+    if (setIndex == 1) {
+      set = drugGeneLow
+      setString = "drugGeneLow"
+    } else if (setIndex == 2) {
+      set = drugGeneHigh
+      setString = "drugGeneHigh"
+    }
+    print(paste("Current object: ", geneDirection, setString, sep = " "))
+    
+    # runs the chosen function for each sample in cde
+    exp <- sapply(1:114, function(i){
+      # Retrieving log_fc changes from cde data. infinite cases and inf values are set to 0
+      profile <- assayDataElement(cde[,i], "log_fc")
+      profile[!complete.cases(profile)] <- 0
+      profile[!is.finite(profile)] <- 0
+      
+      # switch case for deciding between high expressed DE genes or Low expressed DE genes
+      if (geneDirection == "highExpr") {
+        prof.ordered <- profile[order(profile,decreasing = T)]
+        names(prof.ordered) <- rownames(profile)[order(profile,decreasing = T)]
+      } else {
+        prof.ordered <- profile[order(profile,decreasing = F)]
+        names(prof.ordered) <- rownames(profile)[order(profile,decreasing = F)]
+      } 
+      # creating query from log_fc changes in prof.ordered
+      query <- prof.ordered[1:perc]
+      
+      # switch case for gcMAP fucntion
+      if (mode == "wilcox"){
+        exp <- wilcox_score(query, set)
+      } else if (mode == "probability") {
+        query <- GeneSet(names(query))
+        exp <- fisher_score(query = query, sets = set, universe = universe)
+      }
+      
+      # retrieving results from exp object results
+      return(exp)
+    })
+    
+    # saving list of GcMapRestult objects
+    fileLocation = paste("data/gcMAP/",mode,"/", sep="")
+    fileName = paste(mode,geneDirection,setString, sep=".")
+    print(paste("saving file: ",fileLocation, fileName, sep = ""))
+    save(exp, file= paste(fileLocation, fileName, sep = ""))
+    return(exp)
+  })
+  return(exp)
+}
 
-# samples names from geneLevelExpression and immunutraits are made the same
-newRowId <- paste(substr(rownames(immuneTraits), 1, 1), "V", substr(rownames(immuneTraits), 2,4), sep="")
-rownames(immuneTraits) <- newRowId
-
-# Retrieves the samples from which we have transcriptional profile changes 
-# and creates a subset of the immunutrait levels of these samples.
-# Also create an ordered subset per column.
-rnaSeqSamples <- colnames(geneLevelExpression)
-immuneTraits.subset <- immuneTraits[rnaSeqSamples,]
-immuneTrait.subset <- immuneTraits.subset[complete.cases(immuneTraits.subset),]
-
-# creating list of CountSet objects from the samples in immuneTrait subset
-countSetList <- lapply(colnames(immuneTrait.subset), getItExprMatrix)
-names(countSetList) <- paste("IT",1:114,sep="")
-
-# data loading is quicker -> result saved in ./data/gCMAP/nchannelset
-# calculates differential expression from countSetList
-cdeN <- generate_gCMAP_NChannelSet(countSetList,
-                                   uids=1:114,
-                                   sample.annotation=NULL,
-                                   platform.annotation="Entrez",
-                                   control_perturb_col="condition",
-                                   control="low",
-                                   perturb="high")
-
-# data loading is quicker -> results saved in ./data/gCMAP/p10Drug(Low | High)
-p10DrugLow <-  lapply(1:ncol(cde),getFisherScores,drugGeneLow)
-p10DrugHigh <- lapply(1:ncol(getFisherScores),drugGeneHigh)
-
-######################################################################################## LOGIC START
-# Applying threshhold on Z column of cde (throw away each z score ( < | > )  2)
-cmap <- induceCMAPCollection(cde,element = "z", lower = -2 , higher = 2)
-
-# Generating genesets for the High and Low expresssed genes based on their Rank
-drugGeneSetCol <- sapply(3:ncol(drugTable),generateDrugGeneSetCollection)
-drugGeneLow <-GeneSetCollection(unlist(drugGeneSetCol)[seq(1,2618, by=2)])
-drugGeneHigh <-GeneSetCollection(unlist(drugGeneSetCol)[seq(2,2618, by=2)])
-
-# calculates fisherScores -log10 (probability) between set (drugGeneHigh / drugGeneLow) and query (each column of cde)
-fisherScores = sapply(1:ncol(cde),getFisherScores, set = drugGeneHigh, hilo = "lo", mode = "probability")
-colnames(fisherScores) <- paste("IT",1:114,sep="-")
-save(fisherScores, file = "data/gcMAP/probability/prob.exprLow.drugHigh")
-
-min(fisherScores)
-max(fisherScores)
-
-# creating a heatmap of fisherScore p values
-#breaklist(x,y) -> x = min(fisherScore) - 1 , y = max(fisherScore) + 1
-breaksList = seq(0, 87, by = 1)
-pheatmap(fisherScores, main="-log10 P value probability high expressed genes / low drug genes",
-         fontsize= 9,fontsize_col = 5, fontsize_row = 0.5,
-         show_colnames = T, show_rownames = F,
-         cluster_rows = T, cluster_cols = T,
-         color = colorRampPalette(brewer.pal(n = 7, name = "YlOrBr"))(length(breaksList)))
-######################################################################################## LOGIC END
+# creates heatmaps from the result files created by useGcmapFunction
+createHeatMap <- function(resultFile){
+  # resultFile = result file from useGcMapFunction
+  load(resultFile)
+  
+  # creates one matrix from all gCMAP result objects
+  resultMatrix <- sapply(1:114,function(drugResult){
+    drugResult = exp[[drugResult]]
+    resultMatrix <- padj(drugResult)
+    resultMatrix
+  })
+  
+  # sets rownames to NA to avoid cluther of 1309 drugnames
+  colnames(resultMatrix) <- it_codes
+  rows <- rep("",1309)
+  drugs <- colnames(drugTable)[3:ncol(drugTable)]
+  
+  # retrieving location of interesting drugs and set rownames for these locations
+  int.drugs <- grep("trihexyphenidyl|propofol|spironolactone|clioquinol|guanfacine", drugs, perl = T)
+  rows[int.drugs] <- drugs[int.drugs]
+  rownames(resultMatrix) <- rows
+  
+  breakList = seq(0,(max(resultMatrix) + 1), 1)
+  
+  # splitting basename of file to determine file name and location
+  str <- unlist(strsplit(wFile,"\\/"))
+  baseFile <- tail(str,n =1)
+  fileSnippets <- unlist(strsplit(baseFile, "\\."))
+  tit <- paste("-log10 Padj value", fileSnippets[1], "-", fileSnippets[2], "/", fileSnippets[3], sep = " ")
+  fileLoc <- paste("plots/gCMAP",fileSnippets[1], "", sep= "/" )
+  pdfName <- paste(fileSnippets[1],fileSnippets[2],fileSnippets[3],"pdf", sep=".")
+  
+  print("start plot")
+  # plotting heatmaps and saving them in location
+  pdf(filename = paste(fileLoc, pdfName, sep= ""), onefile = F)
+  pheatmap(resultMatrix[int.drugs,], main=tit,
+           fontsize= 20, #,fontsize_col = 10, fontsize_row = 5,
+           show_colnames = T, show_rownames = T,
+           cellheight = 50, bg = "transparent",
+           cluster_rows = T, cluster_cols = T,
+           color = colorRampPalette(brewer.pal(n = 7, name = "YlOrBr"))(length(breakList)))
+  dev.off()
+}
+  
