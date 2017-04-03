@@ -9,8 +9,10 @@ library("gCMAP")
 library("pheatmap")
 library("DESeq")
 library(grid)
+library(RColorBrewer)
+
 setwd("/Volumes/MacOS/500fg")
-source("code/r/gcFunctions.R")
+source("code/r/enrichFunctions.R")
 load("data/gcMAP/nchannelSet")
 
 ######## loading and reading data
@@ -60,19 +62,13 @@ drugGeneLow <-GeneSetCollection(unlist(drugGeneSetCol)[seq(1,2618, by=2)])
 drugGeneHigh <-GeneSetCollection(unlist(drugGeneSetCol)[seq(2,2618, by=2)])
 
 # calculates fisherScores -log10 (probability) between set (drugGeneHigh / drugGeneLow) and query (each column of cde)
-fisherScores = sapply(1:ncol(cde),getFisherScores, set = drugGeneHigh, hilo = "lo", mode = "probability")
-colnames(fisherScores) <- paste("IT",1:114,sep="-")
-save(fisherScores, file = "data/gcMAP/probability/prob.exprLow.drugHigh")
+listOfExps <- useGcmapFunction(geneDirection = "highExpr", mode = "probability")
+probFiles <- list.files()
 
-min(fisherScores)
-max(fisherScores)
+sapply()
+createHeatMap()
 
-# creating a heatmap of fisherScore p values
-#breaklist(x,y) -> x = min(fisherScore) - 1 , y = max(fisherScore) + 1
-breaksList = seq(0, 87, by = 1)
-pheatmap(fisherScores, main="-log10 P value probability high expressed genes / low drug genes",
-         fontsize= 9,fontsize_col = 5, fontsize_row = 0.5,
-         show_colnames = T, show_rownames = F,
-         cluster_rows = T, cluster_cols = T,
-         color = colorRampPalette(brewer.pal(n = 7, name = "YlOrBr"))(length(breaksList)))
+useGcmapFunction(geneDirection = drugGeneLow, mode = "probability")
+
+
 ######################################################################################## LOGIC END
