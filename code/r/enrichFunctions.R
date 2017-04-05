@@ -1,3 +1,10 @@
+checkDir <- function(fp){
+  if (!file.exists(fp)) {
+    dir.create(fp)
+  }
+}
+
+
 getItExprMatrix <- function(IT){
   percentage= ceiling(nrow(immuneTrait.subset) / 100 * 15)
   itValues <- immuneTrait.subset[,IT]
@@ -27,13 +34,14 @@ getItExprMatrix <- function(IT){
 
 generateDrugGeneSetCollection <- function(drugColIndex){
   subsetLength <- nrow(drugTable) * 0.05
+  drugGeneNames <- unique(drugTable[,2])
   drugCol <- drugTable[,drugColIndex]
   drugName <- colnames(drugTable)[drugColIndex]
   drug.sorted <- order(drugCol)
   
-  drugGenesHi <- drugTable[,2][drug.sorted[0:subsetLength]]
-  drugGenesLo <- drugTable[,2][rev(drug.sorted)[0:subsetLength]]
-  
+  drugGenesHi <- drugGeneNames[drug.sorted[0:subsetLength]]
+  drugGenesLo <- drugGeneNames[rev(drug.sorted)[0:subsetLength]]
+   
   drugGeneSetHi <- GeneSet(unique(drugGenesHi),setIdentifier = paste(drugName,"Hi",sep="_"),
                            setName =paste(drugName,"High",sep=""))
   drugGeneSetLo <- GeneSet(unique(drugGenesLo),setIdentifier = paste(drugName,"Lo",sep="_"),
@@ -143,4 +151,51 @@ createHeatMap <- function(resultFile){
            color = colorRampPalette(brewer.pal(n = 7, name = "YlOrBr"))(length(breakList)))
   dev.off()
 }
+
+
+createComparisonFile <- function(perc,geneDirection,setString) {
+  probF <- paste("probability",geneDirection,setString, sep=".")
+  probF <- paste("data/gcMAP/probability/",perc,"/",probF, sep="")
+  load(probF)
+  probFile <- exp
+  probMatrix <- createResultMatrix(probFile)
   
+  wilF <- paste("wilcox",geneDirection,setString, sep=".")
+  wilF <- paste("data/gcMAP/wilcox/",perc,"/",wilF, sep="")
+  load(wilF)
+  wilFile <- exp
+  wilMatrix <- createResultMatrix(wilFile)
+  
+  sapply(1:nrow(probMatrix), function(i){
+    drug <- rownames(probMatrix)[i]
+    probP <- probMatrix[i,]
+    probRank <- -log(probP, base = 10)
+    wilP <- wilMatrix[i,]
+    wilRank <- -log(wilP, base = 10)
+    compMatrix <- do.call(cbind, list(it_codes,probP,probRank,wilP,wilRank))
+    colnames(compMatrix) <- c("IT_Names","Probability Padj","Probability Rank",
+                              "Wilcox Padj","Wilcox Rank")
+    #rownames(compMatrix) <- c("trihexyphenidyl","propofol",
+    #                          "spironolactone","clioquinol","guanfacine")
+    
+    fileN <- paste("comparison",drug,geneDirection,setString, sep = ".")
+    fileP <- paste("data/gcMAP/comparison/",perc,"/",sep="")
+    checkDir(fileP)
+    write.csv(compMatrix, paste(fileP, fileN, sep = ""),quote = F, row.names = F)
+  })
+  
+}
+  
+createResultMatrix <- function(resultFile){
+  resultMatrix <- sapply(1:114,function(drugResult){
+    drugResult = resultFile[[drugResult]]
+    resultMatrix <- padj(drugResult)
+  })
+  # retrieving location of interesting drugs and set rownames for these locations
+  drugs <- colnames(drugTable)[3:ncol(drugTable)]
+  int.drugs <- grep("trihexyphenidyl|propofol|spironolactone|clioquinol|guanfacine", rownames(resultMatrix), perl = T)
+  resultMatrix <- resultMatrix[int.drugs,]
+  colnames(resultMatrix) <- it_codes
+  resultMatrix
+}
+
