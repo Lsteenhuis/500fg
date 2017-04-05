@@ -5,11 +5,10 @@
 # Calculates the probabilty of the DE genes being part of the high / low responding genes in drugTable
 # Calculates the actual enrichment score between DE genes and high / low responding genes in drugTable
 
-library("gCMAP")
-library("pheatmap")
-library("DESeq")
-library(grid)
-library(RColorBrewer)
+suppressMessages(library("gCMAP"))
+suppressMessages(library("pheatmap"))
+suppressMessages(library(grid))
+suppressMessages(library(RColorBrewer))
 
 setwd("/Volumes/MacOS/500fg")
 source("code/r/enrichFunctions.R")
@@ -19,6 +18,7 @@ load("data/gcMAP/nchannelSet")
 drugTable <- read.csv("data/drugs.ens.csv", stringsAsFactors = F)
 geneLevelExpression <- read.delim("data/1508_Li_RNAseq.expression.genelevel.v75.htseq.txt", row.names = 1)
 immuneTraits <- read.csv("data/IRT_immuneTraits_500FG.csv", row.names=1)
+it_codes <- read.csv("data/full_code_sampleInfo.unix.csv", stringsAsFactors = F)[,2]
 
 kegg_ensembl <- read.delim(file="/Users/umcg-lsteenhuis/Downloads/mart_export.txt",stringsAsFactors = F)
 universe <- unlist(kegg_ensembl[,1])
