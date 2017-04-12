@@ -32,8 +32,8 @@ getItExprMatrix <- function(IT){
 }
 
 
-generateDrugGeneSetCollection <- function(drugColIndex){
-  subsetLength <- nrow(drugTable) * 0.05
+generateDrugGeneSetCollection <- function(drugColIndex,perc){
+  subsetLength <- nrow(drugTable) * perc
   drugGeneNames <- unique(drugTable[,2])
   drugCol <- drugTable[,drugColIndex]
   drugName <- colnames(drugTable)[drugColIndex]
@@ -189,7 +189,9 @@ createComparisonFile <- function(perc,geneDirection,setString) {
 createResultMatrix <- function(resultFile){
   resultMatrix <- sapply(1:114,function(drugResult){
     drugResult = resultFile[[drugResult]]
-    resultMatrix <- padj(drugResult)
+    resultMatrix <- pval(drugResult)
+    # Bonferri multiple testing correction
+    resultMatrix <- resultMatrix * 114
   })
   # retrieving location of interesting drugs and set rownames for these locations
   drugs <- colnames(drugTable)[3:ncol(drugTable)]

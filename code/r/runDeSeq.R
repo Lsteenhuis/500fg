@@ -8,8 +8,8 @@
 
 library("DESeq2")
 setwd("/Volumes/MacOS/500fg")
-geneLevelExpression <- read.delim("patientData/1508_Li_RNAseq.expression.genelevel.v75.htseq.txt", row.names = 1)
-immuneTraits <- read.csv("patientData/IRT_immuneTraits_500FG.csv", row.names=1)
+geneLevelExpression <- read.delim("data/1508_Li_RNAseq.expression.genelevel.v75.htseq.txt", row.names = 1)
+immuneTraits <- read.csv("data/IRT_immuneTraits_500FG.csv", row.names=1)
 
 # samples names from geneLevelExpression and immunutraits are made the same
 newRowId <- paste(substr(rownames(immuneTraits), 1, 1), "V", substr(rownames(immuneTraits), 2,4), sep="")
