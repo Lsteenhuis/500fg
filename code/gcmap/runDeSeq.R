@@ -1,10 +1,8 @@
 #!/usr/bin/env Rscript
-#####
-# Date: 02-22-2017
-# Author: Lars Steenhuis
+########################################################################################################################
 # Performs DESeq2 analysis on all Immune traits from IRT_immuneTraits_500FG.csv.
 # Checks for differential expression of the top and bottom percentage per immune trait
-#####
+########################################################################################################################
 
 library("DESeq2")
 setwd("/Volumes/MacOS/500fg")
@@ -34,7 +32,7 @@ expression_annotation[,1] <- condition
 #expression_annotation[,2] <- type
 colnames(expression_annotation) <- c("condition")
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+########################################################################################################################
 # Function which performs DESeq2 analysis per Immuno trait.
 # Takes one immune Trait and order their values.
 # Gets top and bottom expresion samples of this immune trait and retrieve their gene expression levels.
@@ -42,7 +40,7 @@ colnames(expression_annotation) <- c("condition")
 # Sets rownames of expression_annotation to the sample names.
 # Performs DESeq2, use a FDR cutoff of 0.05 and create a subset where padj < 0.05 and is ordered on the log2FoldChange.
 # writes results table to results dir.
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+########################################################################################################################
 
 testDeSeq <- function(IT){
   rownames(expression_annotation) <- NULL
@@ -68,5 +66,6 @@ testDeSeq <- function(IT){
 }
 
 lapply(colnames(immuneTrait.subset), testDeSeq)
+# bash logic for checking if there are DE genes
 # for file in ./*csv; do if [[ ! $(wc -l <$file) -ge 2 ]]; then mv $file $file.nohits; fi ; done
 # Check if the file contains >1 lines, if not append .nohits behind the file

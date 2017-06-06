@@ -1,8 +1,13 @@
+#############################
+# this script calculates the connectivity scores between drugs and genes
+#############################
 library(doParallel)
 library(plyr)
 library(reshape2)
 library(gCMAP)
-
+############################
+# load data
+############################
 setwd("/Volumes/MacOS/500fg/")
 load("data/gcMAP/nchannelSet")
 drugTable <- read.csv("data/drugs.ens.csv", stringsAsFactors = F,header = T)
@@ -11,7 +16,9 @@ shared <- intersect(drugGenes,featureNames(cde))
 drugTable <- drugTable[which(shared %in% drugTable[,2]),]
 drugnames <- colnames(drugTable)
 drugTable <- rbind(drugnames,drugTable)
-
+#############################
+# functions
+#############################
 
 getCScore <-function(drugCol,shared){
   library(gCMAP)
@@ -52,6 +59,7 @@ getCScore <-function(drugCol,shared){
     gsel = (nrow(cell_signature) - deg_set_len + 1):nrow(cell_signature)
     cell_down = cell_signature$GeneID[gsel]
     
+    # calculate score
     score = cmap_score(cell_up, cell_down, drug_signature)
     if (score != 0) {
       score_pvalue = length(which(abs(rSc) >= abs(score)))  / nTrials
@@ -63,7 +71,9 @@ getCScore <-function(drugCol,shared){
   ofile = paste("/Volumes/MacOS/500fg/data/gcMAP/nbt_scores/D_", deg_set_len, "/",drugName , ".csv", sep="")
   write.csv(cell_drug_scores, file=ofile)
 }
+# create cluster
 cl <- makeCluster(4)
 parCapply(cl = cl, drugTable[,3:ncol(drugTable)],getCScore,shared)
+# close cluster
 stopCluster(cl)
   

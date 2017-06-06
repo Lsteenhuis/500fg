@@ -4,8 +4,10 @@ checkDir <- function(fp){
   }
 }
 
-
+# creates countSet for gCMAP based on the immuno type which has been supplied
+# it: it subset
 getItExprMatrix <- function(IT){
+  # takes n% of high and low expressed genes from it subset
   percentage= ceiling(nrow(immuneTrait.subset) / 100 * 15)
   itValues <- immuneTrait.subset[,IT]
   immuneTrait.subset.order <- order(itValues,decreasing = T)
@@ -13,6 +15,7 @@ getItExprMatrix <- function(IT){
   lowValues <- rnaSeqSamples[rev(immuneTrait.subset.order)[1:percentage]]
   highValues <- rnaSeqSamples[immuneTrait.subset.order[1:percentage]]
   
+  # create subset of the extremes 
   extremeValues <- c(lowValues,highValues)
   ItMatrix <- as.data.frame(geneLevelExpression[,extremeValues])
   varMeta <- matrix(c(rep("Control",15),rep("Case",15)),
@@ -23,7 +26,7 @@ getItExprMatrix <- function(IT){
   varMeta <- as.data.frame(varMeta)
   
   annotatedIt <- AnnotatedDataFrame(as.data.frame(t(ItMatrix)), varMeta, dimLabels=c("gene id's","samples"))
-  
+  # create a count set with the top n% of gene expression sets
   countSet <- newCountDataSet(ItMatrix, 
                              conditions = c(rep("low",15),rep("high",15)),
                              phenoData = annotatedIt
@@ -31,7 +34,9 @@ getItExprMatrix <- function(IT){
   countSet
 }
 
-
+# generates a drugset collection based on the column of the drug Table
+# and amount of genes which are looked at.
+# will be used as a database for gCMAP
 generateDrugGeneSetCollection <- function(drugColIndex,perc){
   subsetLength <- nrow(drugTable) * perc
   drugGeneNames <- unique(drugTable[,2])
@@ -40,6 +45,10 @@ generateDrugGeneSetCollection <- function(drugColIndex,perc){
   return(c(drugGeneSetLo,drugGeneSetHi))
 }
 
+# calculates enrichment between high/low expressed genes and 
+# high/low drug ranks. Different modes can be used by mode.
+# geneDirection: high/low expressed genes
+# mode : the mode which will be used for the calculation of enrichment.
 useGcmapFunction <- function(geneDirection, mode){
   # checks if cde (nchannelSet) has been loaded, loads if it isn't
   if (!exists("cde")) {
@@ -142,7 +151,8 @@ createHeatMap <- function(resultFile){
   dev.off()
 }
 
-
+# creates a comparison file displaying the results of the probability rank
+# and the wilcox score probability score
 createComparisonFile <- function(perc,geneDirection,setString) {
   probF <- paste("probability",geneDirection,setString, sep=".")
   probF <- paste("data/gcMAP/probability/",perc,"/",probF, sep="")
@@ -175,7 +185,10 @@ createComparisonFile <- function(perc,geneDirection,setString) {
   })
   
 }
-  
+
+# creates results matrix
+# resultFile: input file 
+# output: result
 createResultMatrix <- function(resultFile){
   resultMatrix <- sapply(1:114,function(drugResult){
     drugResult = resultFile[[drugResult]]

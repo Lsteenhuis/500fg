@@ -1,8 +1,18 @@
+################################
+# script to bar plot the porbability padj resulting from the comparison files
+################################
+# loading data
 percentages <- c("0.01", "0.02", "0.05", "0.1", "0.15", "0.2")
 fp = "data/gcMAP/comparison/0.01/"
 compFiles <- list.files(fp, pattern = "clio", full.names = T)
 cfile = compFiles[1]
 
+################################
+# creates plots to compare significant / insignificant hits. 
+# red = insignificant
+# green = significant
+# expected to see a long green line over multiple percentages for significant hits
+# creates plos for the comp files
 for(cfile in compFiles){
   fileVector <- unlist(strsplit(cfile,"\\/"))
   tit <- unlist(strsplit(fileVector[6], "\\."))
@@ -32,8 +42,8 @@ drugPattern = c("guan","trihex", "prop","spir","clio")
 cellPattern = c("CD4\\+","CD8\\+","Neut","Mono","Neut")
 precentage = "0.05"
 cfile = compFiles[1]
+
 for(i in 1:5){
-  
   compFiles <- list.files(fp, pattern = "clio", full.names = T)
   for(cfile in compFiles){
     fileVector <- unlist(strsplit(cfile,"\\/"))

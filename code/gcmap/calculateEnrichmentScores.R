@@ -1,6 +1,4 @@
 #!/usr/bin/env Rscript
-# Date: 28-03-2017
-# Author: Lars Steenhuis
 # Script which uses gCMAP to test for differential expression between high and low responding genes
 # Calculates the probabilty of the DE genes being part of the high / low responding genes in drugTable
 # Calculates the actual enrichment score between DE genes and high / low responding genes in drugTable
@@ -63,11 +61,6 @@ drugGeneHigh <-GeneSetCollection(unlist(drugGeneSetCol)[seq(2,2618, by=2)])
 
 # calculates fisherScores -log10 (probability) between set (drugGeneHigh / drugGeneLow) and query (each column of cde)
 listOfExps <- useGcmapFunction(geneDirection = "highExpr", mode = "probability")
-probFiles <- list.files()
-
-sapply()
-createHeatMap()
-
 useGcmapFunction(geneDirection = drugGeneLow, mode = "probability")
 
 

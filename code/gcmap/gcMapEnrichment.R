@@ -1,32 +1,30 @@
+############################
+# this script calculates the enrichtment scores 
+############################
 setwd("/Volumes/MacOS/500fg")
-print("loading libs")
 suppressMessages(library("gCMAP"))
 suppressMessages(library("pheatmap"))
 suppressMessages(library("DESeq"))
 suppressMessages(library(grid))
 suppressMessages(library(RColorBrewer))
+
+##########################
+# Loading data
+##########################
 source("code/r/enrichFunctions.R")
-
-print("loading data objects")
-
 load("data/gcMAP/nchannelSet")
 drugTable <- read.csv("data/drugs.ens.csv", stringsAsFactors = F)
 kegg_ensembl <- read.delim(file="/Users/umcg-lsteenhuis/Downloads/mart_export.txt",stringsAsFactors = F)
 universe <- unlist(kegg_ensembl[,1])
-
 
 # Generating genesets for the High and Low expresssed genes based on their Rank
 drugGeneSetCol <- sapply(3:ncol(drugTable),generateDrugGeneSetCollection)
 
 drugGeneLow <-GeneSetCollection(unlist(drugGeneSetCol)[seq(1,2618, by=2)])
 drugGeneHigh <-GeneSetCollection(unlist(drugGeneSetCol)[seq(2,2618, by=2)])
+##########################
 
-print("starting logic")
-perc = ceiling(nrow(cde) * 0.05)
-sets = c(drugGeneLow, drugGeneHigh)
-deGenesDireciton=c("highExpr", "lowExpr")
-modes = c("wilcox", "probability")
-mode= "probability"
+
 
 sapply(modes, function(mode){
   print(paste("Mode: ",mode))
@@ -76,7 +74,13 @@ sapply(modes, function(mode){
     })
   })
 })
-print("finished logic")
+
+perc = ceiling(nrow(cde) * 0.05)
+sets = c(drugGeneLow, drugGeneHigh)
+deGenesDireciton=c("highExpr", "lowExpr")
+modes = c("wilcox", "probability")
+mode= "probability"
+
 
 
 
