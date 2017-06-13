@@ -70,6 +70,10 @@ makeMatricesOverlap <- function(xMat,yMat){
 #################################
 # creating halla tables for PRS immuno diseases from  and metabolites 
 prsImmuno <- prs[grep(grepImmunoString,rownames(prs)),]
+horm <- read.csv("/Volumes/MacOS/500fg/500FG/data_for_lars/log2HormoneLevels500FG.txt", 
+                 row.names = 1, header = T, 
+                 sep=" ")
+horm <- as.data.frame(t(horm))
 listOfMatrix <- makeMatricesOverlap(prsImmuno,metaData)
 prsImmuno <- as.data.frame(listOfMatrix[1])
 metaData <- as.data.frame(listOfMatrix[2])
@@ -86,18 +90,20 @@ write.table(metaData,file = "/Volumes/MacOS/500fg/500FG/data_for_lars/halla_data
 
 #creating halla tables for PRS immuno diseases and hormone levels
 prsImmuno <- prs[grep(grepImmunoString,rownames(prs)),]
-listOfMatrix <- makeMatricesOverlap(prsImmuno,horm)
+immunoMod <-  as.data.frame(t(immunoMod))
+listOfMatrix <- makeMatricesOverlap(prsImmuno,immunoMod)
 prsImmuno <- as.data.frame(listOfMatrix[1])
-horm <- as.data.frame(listOfMatrix[2])
+immunoMod <- as.data.frame(listOfMatrix[2])
 
-write.table(prsImmuno,file = "/Volumes/MacOS/500fg/500FG/data_for_lars/halla_data/prsImmuno.vs.hormones/prsImmuno.hormones.tsv", 
+write.table(prsImmuno,file = "/Volumes/MacOS/500fg/halla/immunoMod.prsDis/dis.tsv", 
             sep="\t", quote = F,
             row.names = T, col.names = T,
             na = "0")
-write.table(horm,file = "/Volumes/MacOS/500fg/500FG/data_for_lars/halla_data/prsImmuno.vs.hormones/hormones.prsImmuno.tsv", 
+write.table(immunoMod,file = "/Volumes/MacOS/500fg/halla/immunoMod.prsDis/immunoMod.tsv", 
             sep="\t", quote = F,
             row.names = T, col.names = T,
             na = "0")
+
 
 # creating halla tables for PRS immuno diseases and plataletes
 prsImmuno <- prs[grep(grepImmunoString,rownames(prs)),]

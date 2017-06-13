@@ -10,7 +10,16 @@ source("/Volumes/MacOS/500fg/code/r/prs/PlottingFunctions.r")
 # functions
 ###################################################################################################################################
 # calculate correlations between two inhomogeneous matrices
+
 getCorMat <- function(xMat,yMat){
+  xSamples <- colnames(xMat)
+  ySamples <- colnames(yMat)
+  
+  intersectSample <- intersect(xSamples,ySamples)
+  xMat <- xMat[,which(colnames(xMat) %in% intersectSample)]
+  yMat <- yMat[,which(colnames(yMat) %in% intersectSample)]
+  xMat <- xMat[,order(colnames(xMat))]
+  yMat <- yMat[,order(colnames(yMat))]
   corResMat <- apply(xMat,1,function(x){
     corRes <- apply(yMat,1,function(y){
       res <- cor(x, y,method = "spearman",use = "complete.obs")
@@ -43,7 +52,7 @@ prs <- as.data.frame(read.table(file = "/Volumes/MacOS/500fg/geneticRiskScore/ou
                                 sep = "\t", stringsAsFactors = F))
 
 # auto immune diseases of interest
-grepImmunoString <- "gout|celiac|Ulcerative_Colitis|Juvenile_Idiopathic_Arthritis|multiple_sclerosis|Narcolepsy|primary_biliary_cirrhosis|psoriasis|T1D|systemic_lupus_erythematosus|Rheumatoid_Arthritis|Crohns_disease|Ulcerative_colitis|Inflammatory_Bowel_Disease|Asthma"
+
 prsImmuno <- prs[grep(grepImmunoString,rownames(prs)),]
 
 # subset of prsImmuno for figure one of the paper
@@ -55,6 +64,11 @@ immunoMod <- read.table("/Volumes/MacOS/500fg/500FG/data_for_lars/20151117result
 immunoMod <- as.data.frame(t(immunoMod))
 # data needs to be log transformed
 immunoMod <- log2(immunoMod)
+cytokine <- as.data.frame(read.table(file = "/Volumes/MacOS/500fg/data/pheno_91cytokines_4Raul.csv" ,
+                                     header = T, row.names = 1,
+                                     stringsAsFactors = F, sep = ","))
+cytokine <- cytokine[,-1]
+
 
 
 ###################################################################################################################################
@@ -136,4 +150,11 @@ p + scale_fill_manual(values=c(positive="darkred",negative="darkblue"))  + theme
 dev.off()
 
 ###################################################################################################################################
+grepImmunoString <- "Ulcerative_Colitis|Crohns_disease|Inflammatory_Bowel_Disease"
+prsImmuno <- prs[grep(grepImmunoString,rownames(prs)),]
+cytoPrs <- getCorMat(cytokine,prsImmuno)
+cytoPrs <- cytoPrs[,grep("IL22|IL7|IFNy",colnames(cytoPrs),ignore.case = T)]
 
+pheatmap(cytoPrs)
+p <- bp.grouped(t(cytoPrs), legend = F)
+p + scale_fill_manual(values=c(positive="darkred",negative="darkblue"))  + theme(legend.position="none")

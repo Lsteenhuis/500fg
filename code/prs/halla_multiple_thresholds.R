@@ -27,11 +27,11 @@ getCorMat <- function(xMat,yMat){
 
   corResMat <- apply(xMat,1,function(x){
     corRes <- apply(yMat,1,function(y){
-      res <- cor(x, y,method = "spearman",use = "complete.obs")
+      res <- rcorr(as.matrix(x), as.matrix(y),type = "spearman")
     })
   })
-  colnames(corResMat) <- rownames(xMat)
-  rownames(corResMat) <- rownames(yMat)
+  #colnames(corResMat) <- rownames(xMat)
+  #rownames(corResMat) <- rownames(yMat)
   corResMat
   
 }

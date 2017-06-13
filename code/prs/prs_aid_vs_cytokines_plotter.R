@@ -11,7 +11,7 @@ suppressPackageStartupMessages(library(pheatmap))
 getCorMat <- function(xMat,yMat){
   corResMat <- apply(xMat,1,function(x){
     corRes <- apply(yMat,1,function(y){
-      res <- cor(x, y,method = "spearman",use = "complete.obs")
+      res <- cor.test(x, y,method = "spearman", exact = T)$estimate
     })
   })
   colnames(corResMat) <- rownames(xMat)
@@ -25,9 +25,7 @@ getCorMat <- function(xMat,yMat){
 getCorPvalMat <- function(xMat,yMat){
   corResMat <- apply(xMat,1,function(x){
     corRes <- apply(yMat,1,function(y){
-      res <- rcorr(x, y,
-                 type = "spearman")
-      res$P[2,1]
+      res <- cor.test(x, y,method = "spearman", exact = T)$p.value
     })
   })
   colnames(corResMat) <- rownames(xMat)
@@ -113,6 +111,7 @@ hyp <- tcells[grep("hyphae", rownames(tcells),perl=T, ignore.case = T),]
 tcellsHypCor <- getCorMat(ibdPrs,hyp)
 # -0.07743134  0.15722679
 range(tcellsHypCor)
+
 pheatmap(tcellsHypCor, show_rownames = T,show_colnames = T, fontsize_row = 5, fontsize_col = 5,
          cluster_cols = F, cluster_rows = T)
 
@@ -163,7 +162,8 @@ cytoPrsRaCor <- getCorMat(cytokine,prsRa)
 # -0.1462555  0.1827397
 range(cytoPrsRaCor)
 pheatmap(t(cytoPrsRaCor),cluster_cols = F, cluster_rows = T, 
-         show_rownames = T,show_colnames = T, fontsize_row = 5, fontsize_col = 5)
+         show_rownames = T,show_colnames = T, fontsize_row = 5, fontsize_col = 5,
+         clustering_distance_rows = "spearman")
 
 hallaRaCyt <- read.table("/Volumes/MacOS/500fg/halla/prsRa.cytokine/similarity_table.txt",row.names = 1,comment.char = "@", header = T)
 cytoPrsRaCor <- cytoPrsRaCor[which(rownames(cytoPrsRaCor) %in% rownames(hallaRaCyt)), ]

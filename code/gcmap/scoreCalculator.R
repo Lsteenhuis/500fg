@@ -11,7 +11,7 @@ library(gCMAP)
 setwd("/Volumes/MacOS/500fg/")
 load("data/gcMAP/nchannelSet")
 drugTable <- read.csv("data/drugs.ens.csv", stringsAsFactors = F,header = T)
-drugGenes <- unique(drugTable[,2])
+drugGenes <- unique(drugTable[,2])+
 shared <- intersect(drugGenes,featureNames(cde))
 drugTable <- drugTable[which(shared %in% drugTable[,2]),]
 drugnames <- colnames(drugTable)
