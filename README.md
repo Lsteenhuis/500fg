@@ -46,5 +46,6 @@ The scripts in this folder were used to perform correlation analyses between the
 	violin_plots <- creating of violin_plot
 
 
-[1] Lamb J, et al, The Connectivity Map: using gene-expression signatures to connect small molecules, genes, and disease., Scinece, 2006,1929-1935
+[1] Lamb J, et al, The Connectivity Map: using gene-expression signatures to connect small molecules, genes, and disease., Science, 2006,1929-1935
+
 [2] kidd et al, Mapping the effects of drugs on the immune system, nature biotechnology,34, 2016, 47-5
