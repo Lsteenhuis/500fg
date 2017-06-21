@@ -3,8 +3,10 @@ R scripts were made to do different analyses, such as the calculation of a conne
 
 # ROADMAP
 
-# ./gcmap
-These are the scripts which were used to calculate the connectivity score with two different methods: GCMAP and kidd et al [1]
+## ./gcmap
+These are the scripts which were used to calculate the connectivity score with two different methods: GCMAP and kidd et al [1] 
+
+
   	connectivity plotter <- code to create plots for connectivity scores (kidd et al)
 	scoreCalculator <- calculates connectivity score ( kidd et al method)
    	clusMap <- creates plot for calculated Pertubation combinations (gcmap)
@@ -19,12 +21,12 @@ These are the scripts which were used to calculate the connectivity score with t
 	hyperDistTest <- small test file for hyper distribution test
 	plotProbPadj <- create plots for probability scores
 
-# ./hala
+## ./hala
 The scripts in this folder were used to create the tables for the HALLA program and the plotting of some results.
 	halla.data.proc <- create halla tables
 	manuscript_plot_edit <- create plots of halla
 
-# ./prs
+## ./prs
 The scripts in this folder were used to perform correlation analyses between the polygenic risk scores and immmune components.
 	correlation.heatmap <- create heatmaps of correlations
  	correlation.multiplots <- create barplots of correations
